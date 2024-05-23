@@ -4,7 +4,7 @@ const con = mysql.createPool({
   host: "localhost",
   port: 3306,
   user: "root",
-  password: "admin",
+  password: "",
   database: "the_laundry_walas",
   multipleStatements:true
 });
