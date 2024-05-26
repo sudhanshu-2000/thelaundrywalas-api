@@ -9,7 +9,7 @@ require("dotenv").config();
 const bcrypt = require("bcrypt");
 var bodyParser = require("body-parser");
 app.use(
-  cors({ origin: ['http://localhost:4201', 'http://localhost:52230','https://admin.thelaundrywalas.com/'] })
+  cors({ origin: ['http://localhost:4200', 'https://admin.thelaundrywalas.com'] })
 );
 app.use(bodyParser.json({ limit: "50mb" }));
 app.use(
@@ -68,39 +68,36 @@ app.post("/login", (req, res) => {
     if (role_err) throw role_err;
     if (role_result.length > 0) {
       if ("Super Admin" == role_result[0].role) {
-        con.query(
-          "select * from login where username = ?",
-          [req.body.username],
-          (err, result) => {
-            if (err) throw err;
-            if (result[0] != null) {
-              const match = bcrypt.compareSync(
-                req.body.password,
-                result[0].password
+        con.query("select * from login where username = ?", [req.body.username], (err, result) => {
+          if (err) throw err;
+          if (result[0] != null) {
+            const match = bcrypt.compareSync(
+              req.body.password,
+              result[0].password
+            );
+            if (match) {
+              jwt.sign(
+                { username: result[0].username },
+                process.env.SECRET_KEY_SUPERADMIN, { expiresIn: '30d' },
+                (err, token) => {
+                  if (err) throw err;
+                  else
+                    con.query("UPDATE `login` SET `is_active`='Y' WHERE `username` = ?", [req.body.username]);
+                  res.status(200).json({
+                    status: true,
+                    username: result[0].username,
+                    play: role_result[0].playbtn,
+                    token,
+                  });
+                }
               );
-              if (match) {
-                jwt.sign(
-                  { username: result[0].username },
-                  process.env.SECRET_KEY_SUPERADMIN, { expiresIn: '30d' },
-                  (err, token) => {
-                    if (err) throw err;
-                    else
-                      con.query("UPDATE `login` SET `is_active`='Y' WHERE `username` = ?", [req.body.username])
-                    res.status(200).json({
-                      status: true,
-                      username: result[0].username,
-                      play: role_result[0].playbtn,
-                      token,
-                    });
-                  }
-                );
-              } else {
-                res.send("Username And Password is Wrong!");
-              }
             } else {
-              res.send("Username is not exist");
+              res.send("Username And Password is Wrong!");
             }
+          } else {
+            res.send("Username is not exist");
           }
+        }
         );
       } else {
         con.query(
@@ -2312,7 +2309,7 @@ app.post("/update-user-deatils", verifytoken, (req, res) => {
 app.post("/add-total-cost", verifytoken, (req, res) => {
   con.query(
     "INSERT INTO `total_cost`(`item_name`, `type`, `cost`, `discription`, `date`) VALUES (?,?,?,?,?)",
-    [req.body.name, req.body.type, req.body.cost,req.body.discription, req.body.date],
+    [req.body.name, req.body.type, req.body.cost, req.body.discription, req.body.date],
     (err, result) => {
       if (err) throw err;
       if (result) {
