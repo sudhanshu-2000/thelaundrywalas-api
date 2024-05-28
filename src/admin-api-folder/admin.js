@@ -2232,36 +2232,21 @@ app.post("/update-bill-status", verifytoken, (req, res) => {
 // add-user-deatils
 app.post("/add-user-deatils", verifytoken, (req, res) => {
   con.query(
-    "select * from user_details where `email`=?",
-    [req.body.email],
+    "INSERT INTO `user_details`(`name`, `email`,`phone`) VALUES (?,?,?)",
+    [req.body.name, req.body.email, req.body.phone],
     (err, result) => {
       if (err) throw err;
-      if (result.length > 0) {
-        res.status(404).json({
-          error: true,
-          status: false,
-          message: "Email Id is Already Exist!",
-        });
-      } else {
+      if (result) {
         con.query(
-          "INSERT INTO `user_details`(`unique_key`,`name`, `email`,`phone`) VALUES ((SELECT IFNULL((MAX(vc.`unique_key`) + 1), 1000001) as key_id FROM `user_details` as vc),?,?,?)",
-          [req.body.name, req.body.email, req.body.phone],
-          (err, result) => {
-            if (err) throw err;
-            if (result) {
-              con.query(
-                "INSERT INTO `wallet`(`unique_key`,`email`, `wallet_balance`) VALUES ((SELECT IFNULL((MAX(vc.`unique_key`) + 1), 1000001) as key_id FROM `user_details` as vc),?,?)",
-                [req.body.email, 0], (ab, ba) => {
-                  if (ab) { throw ab }
-                  if (ba) {
-                    res.status(200).json({
-                      error: false,
-                      status: true,
-                      message: "Registered Successfully",
-                    });
-                  }
-                }
-              );
+          "INSERT INTO `wallet`(`email`, `wallet_balance`) VALUES (?,?)",
+          [req.body.email, 0], (ab, ba) => {
+            if (ab) { throw ab }
+            if (ba) {
+              res.status(200).json({
+                error: false,
+                status: true,
+                message: "Registered Successfully",
+              });
             }
           }
         );
@@ -2269,6 +2254,7 @@ app.post("/add-user-deatils", verifytoken, (req, res) => {
     }
   );
 })
+
 app.post("/update-user-deatils", verifytoken, (req, res) => {
   con.query("select * from user_details where `email`=?",
     [req.body.email], (err, result) => {
